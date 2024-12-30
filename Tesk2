@@ -1,0 +1,114 @@
+create database student;
+use student;
+CREATE TABLE students (
+    student_id INT PRIMARY KEY AUTO_INCREMENT,    
+    first_name VARCHAR(100) NOT NULL,             
+    last_name VARCHAR(100) NOT NULL,              
+    email VARCHAR(100) UNIQUE NOT NULL,        
+    phone_number VARCHAR(15),                     
+    dob DATE,                                    
+    enrollment_date DATE NOT NULL                 
+);
+
+#Create the 'courses' table
+CREATE TABLE courses (
+    course_id INT PRIMARY KEY AUTO_INCREMENT,   
+    course_name VARCHAR(255) NOT NULL,           
+    course_code VARCHAR(10) UNIQUE NOT NULL,     
+    credits INT NOT NULL                         
+);
+
+# Create the 'enrollments' table
+CREATE TABLE enrollments (
+    enrollment_id INT PRIMARY KEY AUTO_INCREMENT,
+    student_id INT,                               
+    course_id INT,                                
+    grade VARCHAR(2),                            
+    enrollment_date DATE NOT NULL,                
+    FOREIGN KEY (student_id) REFERENCES students(student_id),
+    FOREIGN KEY (course_id) REFERENCES courses(course_id)
+);
+
+#Insert sample data into 'students' table
+INSERT INTO students (first_name, last_name, email, phone_number, dob, enrollment_date)
+VALUES 
+('John', 'Doe', 'john.doe@example.com', '123-456-7890', '2000-01-15', '2024-01-01'),
+('Jane', 'Smith', 'jane.smith@example.com', '987-654-3210', '1999-05-20', '2023-09-01');
+
+#Insert sample data into 'courses' table
+INSERT INTO courses (course_name, course_code, credits)
+VALUES 
+('Introduction to Computer Science', 'CS101', 3),
+('Mathematics for Engineers', 'MATH101', 4);
+
+#Enroll students in courses
+INSERT INTO enrollments (student_id, course_id, grade, enrollment_date)
+VALUES 
+(1, 1, 'A', '2024-01-01'),
+(1, 2, 'B+', '2024-01-01'),
+(2, 1, 'B', '2023-09-01');
+
+#Query to get all students
+SELECT * FROM students;
+
+#Query to get all courses
+SELECT * FROM courses;
+
+#Query to get all enrollments for a specific student (Student with student_id = 1)
+SELECT s.first_name, s.last_name, c.course_name, e.grade
+FROM enrollments e
+JOIN students s ON e.student_id = s.student_id
+JOIN courses c ON e.course_id = c.course_id
+WHERE e.student_id = 1;
+
+#Query to get all students enrolled in a specific course (Course with course_id = 1)
+SELECT s.first_name, s.last_name, e.grade
+FROM enrollments e
+JOIN students s ON e.student_id = s.student_id
+WHERE e.course_id = 1;
+
+#Query to get all students with their course names and grades
+SELECT s.first_name, s.last_name, c.course_name, e.grade
+FROM enrollments e
+JOIN students s ON e.student_id = s.student_id
+JOIN courses c ON e.course_id = c.course_id;
+
+#Query to get the grades of a student for a specific course (Student 1, Course 1)
+SELECT e.grade
+FROM enrollments e
+WHERE e.student_id = 1 AND e.course_id = 1;
+
+#Query to get courses and their average grades (assumes grade system: A=4, B+=3.5, B=3)
+SELECT c.course_name, 
+       AVG(CASE 
+            WHEN e.grade = 'A' THEN 4
+            WHEN e.grade = 'B+' THEN 3.5
+            WHEN e.grade = 'B' THEN 3
+            ELSE 0
+           END) AS average_grade
+FROM enrollments e
+JOIN courses c ON e.course_id = c.course_id
+GROUP BY c.course_name;
+
+#Query to get all students who have not enrolled in any courses
+SELECT s.first_name, s.last_name
+FROM students s
+LEFT JOIN enrollments e ON s.student_id = e.student_id
+WHERE e.enrollment_id IS NULL;
+
+#Query to update a student's grade
+UPDATE enrollments
+SET grade = 'A'
+WHERE student_id = 1 AND course_id = 2;
+
+#Query to delete a student's enrollment from a course
+DELETE FROM enrollments
+WHERE student_id = 1 AND course_id = 2;
+
+#Query to delete a student (if they have no courses enrolled)
+DELETE FROM students
+WHERE student_id = 1 AND NOT EXISTS (SELECT 1 FROM enrollments WHERE student_id = 1);
+
+#Query to delete a course (if no students are enrolled)
+DELETE FROM courses
+WHERE course_id = 2 AND NOT EXISTS (SELECT 1 FROM enrollments WHERE course_id = 2);
